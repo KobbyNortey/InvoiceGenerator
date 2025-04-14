@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environment
+.venv/
+
+# Sensitive credentials file should not be tracked
+credentials.json
+
+# Logs and temporary files
+*.log
+DonFM_log.txt
+
+# OS-specific files
+.DS_Store
