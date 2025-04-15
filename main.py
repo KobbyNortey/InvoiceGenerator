@@ -6,6 +6,9 @@ from docx2pdf import convert
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+import smtplib
+from email.message import EmailMessage
+
 
 # === CONFIG ===
 TEMPLATE_PATH =" " #Absolute Path to Invoice Word Template (.docx)
@@ -85,6 +88,39 @@ def add_event_to_google_calendar(credentials_file, summary, start_time, duration
     event = service.events().insert(calendarId="XXX@group.calendar.google.com", body=event).execute() #Replace with your Google Calendar ID
     print(f"Google Calendar event created: {event.get('htmlLink')}")
 
+def send_invoice_email(to_email, client_name, pdf_path):
+    sender_email = "your_email@gmail.com"
+    app_password = "your_app_password"
+
+    msg = EmailMessage()
+    msg["Subject"] = f"DJ Booking Invoice for {client_name}"
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg.set_content(
+        f"""Hello {client_name},
+
+Attached is your invoice for the upcoming DJ booking. Please feel free to reach out if you have any questions.
+
+Thank you for your booking!
+
+Best,
+"Your name"
+"""
+    )
+
+    with open(pdf_path, "rb") as f:
+        pdf_data = f.read()
+        msg.add_attachment(pdf_data, maintype="application", subtype="pdf", filename=os.path.basename(pdf_path))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(sender_email, app_password)
+            smtp.send_message(msg)
+            print(f"Invoice email sent to {to_email}")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
+
 # === MAIN ===
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
@@ -119,6 +155,8 @@ else:
     pdf_output_path = output_path.replace(".docx", ".pdf")
     convert(output_path, pdf_output_path)
     print(f"PDF saved: {pdf_output_path}")
+    send_invoice_email(entry["EMAIL"], entry["CLIENT_NAME"], pdf_output_path)
+
 
     # Add to Google Calendar
     event_title = f"DJ for {entry['EVENT_NAME']} - {entry['CLIENT_NAME']}"
